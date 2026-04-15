@@ -33,8 +33,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -44.5)
 size = Vector3(30, 1, 57)
 
 [node name="CSGBox3D7" type="CSGBox3D" parent="CSGCombiner3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 6, -44.5)
-size = Vector3(5, 13, 57)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 6, -44.5)
+size = Vector3(2, 13, 57)
+
+[node name="CSGBox3D8" type="CSGBox3D" parent="CSGCombiner3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 6, -56)
+size = Vector3(2, 13, 34)
 
 [node name="CSGBox3D2" type="CSGBox3D" parent="CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 0.5, -54)
@@ -87,3 +91,11 @@ script = ExtResource("2_0xm2m")
 
 [node name="Camera3D" type="Camera3D" parent="Player/CamPivot"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0435276, 6.6531525)
+
+[node name="Timers" type="Node" parent="Player"]
+
+[node name="JumpBuffer" type="Timer" parent="Player/Timers"]
+one_shot = true
+
+[node name="WallJumpBuffer" type="Timer" parent="Player/Timers"]
+one_shot = true
