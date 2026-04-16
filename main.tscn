@@ -37,7 +37,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 6, -44.5)
 size = Vector3(2, 13, 57)
 
 [node name="CSGBox3D8" type="CSGBox3D" parent="CSGCombiner3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 6, -56)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 6, -56)
 size = Vector3(2, 13, 34)
 
 [node name="CSGBox3D2" type="CSGBox3D" parent="CSGCombiner3D"]
@@ -99,3 +99,14 @@ one_shot = true
 
 [node name="WallJumpBuffer" type="Timer" parent="Player/Timers"]
 one_shot = true
+
+[node name="TripleJumpGrace" type="Timer" parent="Player/Timers"]
+one_shot = true
+
+[node name="JumpCooldown" type="Timer" parent="Player/Timers"]
+one_shot = true
+
+[node name="Stomp" type="RayCast3D" parent="Player"]
+target_position = Vector3(0, -1.5, 0)
+
+[connection signal="timeout" from="Player/Timers/JumpCooldown" to="Player" method="_on_jump_cooldown_timeout"]

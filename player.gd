@@ -19,7 +19,7 @@ var targetRot = 0
 
 var camForw : Vector3
 
-enum States {IDLE, MOVE, FALLING}
+enum States {IDLE, MOVE, FALLING, STOMPING}
 
 var state = States.MOVE
 
@@ -31,6 +31,13 @@ var moveControl = 8
 @onready var jump_buffer: Timer = $Timers/JumpBuffer
 @onready var wall_jump_buffer: Timer = $Timers/WallJumpBuffer
 
+@onready var stomp_ray: RayCast3D = $Stomp
+
+@onready var triple_jump_grace: Timer = $Timers/TripleJumpGrace
+
+var jumpNum = 0
+
+var canJump := true
 
 func flatten(vector: Vector3) -> Vector3:
 	return Vector3( vector.x, 0, vector.z)
@@ -46,7 +53,8 @@ func move() -> void:
 		targetRot = atan2(-direction.x, -direction.z)
 		
 	else:
-		velocity = lerp(velocity, Vector3.ZERO + Vector3(0,velocity.y,0), 8 * dt)
+		if is_on_floor():
+			velocity = lerp(velocity, Vector3.ZERO + Vector3(0,velocity.y,0), 8 * dt)
 
 func _physics_process(delta: float) -> void:
 	dt = delta
@@ -56,9 +64,17 @@ func _physics_process(delta: float) -> void:
 		velocity += get_gravity() * delta
 
 	# Handle jump.
-	if Input.is_action_just_pressed("ui_accept"):
+	if Input.is_action_just_pressed("Jump"):
+		canJump = false
 		jump()
 
+	if Input.is_action_just_pressed("Stomp"):
+		if not is_on_floor() and state != States.STOMPING:
+			state = States.STOMPING
+			velocity = Vector3.ZERO
+			stomp()
+		
+	
 	input_dir = Input.get_vector("Left", "Right", "Up", "Down")
 	direction = flatten($CamPivot.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	
@@ -77,19 +93,23 @@ func runState() -> void:
 
 func checkState() -> void:
 	if is_on_floor():
+		if state == States.FALLING: #prev state
+			triple_jump_grace.start(.2)
+			
 		if input_dir.length() > 0:
 			state = States.MOVE
 		else:
 			state = States.IDLE
 		
 		if jump_buffer.time_left > 0:
-			print(jump_buffer.time_left)
+			#print(jump_buffer.time_left)
 			jump()
 		
 		moveControl = 8
 	else:
-		state = States.FALLING
-		moveControl = 1
+		if state != States.STOMPING:
+			state = States.FALLING
+			moveControl = 1
 		
 
 
@@ -102,7 +122,7 @@ func wallSlideCheck() -> void:
 	canWJ = false
 	if wall_jump_ray.is_colliding():
 		var dot = wall_jump_ray.get_collision_normal().dot(direction)
-		print(velocity.y)
+		#print(velocity.y)
 		if dot < -.65:
 			if not is_on_floor(): #
 				canWJ = true
@@ -112,13 +132,48 @@ func wallSlideCheck() -> void:
 
 
 func jump() -> void:
-	if is_on_floor():
-		var newVel = direction * velocity.length()
-		newVel.y = JUMP_VELOCITY
-		velocity = newVel
-		
-	if canWJ or wall_jump_buffer.time_left > 0:
-		var dir = wall_jump_ray.get_collision_normal()
-		velocity = dir * 20
-		velocity.y = 10
+	
+	
+	if canJump:
+		print("WANT")
+		if is_on_floor():
+			manageTripleJump()
+			
+		if canWJ or wall_jump_buffer.time_left > 0:
+			var dir = wall_jump_ray.get_collision_normal()
+			velocity = dir * 5
+			velocity.y = 10
+	
 	jump_buffer.start(.3)
+	
+	$Timers/JumpCooldown.start(.01)
+	
+	
+func stomp() -> void:
+	if stomp_ray.is_colliding() or is_on_floor():
+		state = States.IDLE
+		moveControl = 8
+	else: #keep goin
+		velocity.y = -30
+		moveControl = 1
+
+
+func manageTripleJump() -> void:
+	var newVel = direction * velocity.length()
+	if triple_jump_grace.time_left == 0 or jumpNum == 0 or jumpNum > 2:
+		newVel.y = JUMP_VELOCITY
+		
+		jumpNum = 0
+	else:
+		if jumpNum == 1:
+			newVel.y = JUMP_VELOCITY * 1.2
+		elif jumpNum == 2:
+			newVel.y = JUMP_VELOCITY * 2	
+		
+	jumpNum += 1
+	print(jumpNum)
+	velocity = newVel
+
+
+func _on_jump_cooldown_timeout() -> void:
+	canJump = true
