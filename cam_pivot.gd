@@ -20,6 +20,8 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if not player.on:
+		return
 	if event is InputEventMouseMotion and not mouseLock:
 		
 		

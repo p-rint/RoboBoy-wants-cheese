@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=3 uid="uid://chesxyh1wbbnu"]
+
+[ext_resource type="Script" uid="uid://csrx32hpgbhjx" path="res://chez.gd" id="1_ckrlu"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_ftk0b"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ckrlu"]
+emission_enabled = true
+emission = Color(2.1643846, 2.1643846, 2.1643846, 1)
+emission_energy_multiplier = 10.38
+distance_fade_max_distance = 30.0
+stencil_flags = 2
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ckrlu"]
+
+[node name="Chez" type="Area3D"]
+script = ExtResource("1_ckrlu")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_ftk0b")
+surface_material_override/0 = SubResource("StandardMaterial3D_ckrlu")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_ckrlu")
+
+[connection signal="area_entered" from="." to="." method="_on_area_entered"]

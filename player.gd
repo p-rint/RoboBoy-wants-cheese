@@ -4,10 +4,12 @@ var direction : Vector3
 var input_dir : Vector2
 const SPEED = 13.0
 const SSPEED = 10.0
-const JUMP_VELOCITY = 8
+const JUMP_VELOCITY = 9
 
 @onready var camPiv = $CamPivot
 @onready var model = $Character
+@onready var mesh: MeshInstance3D = $Character/MeshInstance3D
+
 
 var dt : float
 var targetRot = 0
@@ -39,6 +41,15 @@ var jumpNum = 0
 
 var canJump := true
 
+@onready var stompJumpTimer: Timer = $Timers/StompJump
+
+var on = true
+
+var targetScale = Vector3(1,1,1)
+
+
+
+
 func flatten(vector: Vector3) -> Vector3:
 	return Vector3( vector.x, 0, vector.z)
 
@@ -57,6 +68,9 @@ func move() -> void:
 			velocity = lerp(velocity, Vector3.ZERO + Vector3(0,velocity.y,0), 8 * dt)
 
 func _physics_process(delta: float) -> void:
+	if not on:
+		return
+	
 	dt = delta
 	camForw = flatten($CamPivot.basis.z)
 	# Add the gravity.
@@ -65,18 +79,20 @@ func _physics_process(delta: float) -> void:
 
 	# Handle jump.
 	if Input.is_action_just_pressed("Jump"):
-		canJump = false
 		jump()
 
 	if Input.is_action_just_pressed("Stomp"):
 		if not is_on_floor() and state != States.STOMPING:
 			state = States.STOMPING
 			velocity = Vector3.ZERO
+			mesh.scale = Vector3(.4,1.7,.4)
 			stomp()
 		
 	
 	input_dir = Input.get_vector("Left", "Right", "Up", "Down")
 	direction = flatten($CamPivot.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	
+	mesh.scale = mesh.scale.lerp(targetScale, dt * 5)
 	
 	checkState()
 	runState()
@@ -95,6 +111,9 @@ func checkState() -> void:
 	if is_on_floor():
 		if state == States.FALLING: #prev state
 			triple_jump_grace.start(.2)
+			mesh.scale = Vector3(1.1,.8,1.1)
+		if state == States.STOMPING:
+			mesh.scale = Vector3(1.7,.5,1.7)
 			
 		if input_dir.length() > 0:
 			state = States.MOVE
@@ -103,13 +122,21 @@ func checkState() -> void:
 		
 		if jump_buffer.time_left > 0:
 			#print(jump_buffer.time_left)
-			jump()
+			print( state)
+			if stompJumpTimer.time_left > 0:
+				stompJump()
+			else:	
+				jump()
 		
 		moveControl = 8
 	else:
 		if state != States.STOMPING:
 			state = States.FALLING
 			moveControl = 1
+			targetScale = Vector3(.9, 1.1, .9)
+		else:
+			targetScale = Vector3(.8,1.3,.8)
+			stomp()
 		
 
 
@@ -132,19 +159,29 @@ func wallSlideCheck() -> void:
 
 
 func jump() -> void:
-	
-	
 	if canJump:
+		canJump = false
 		print("WANT")
 		if is_on_floor():
-			manageTripleJump()
+			if stompJumpTimer.time_left == 0:
+				manageTripleJump()
+				print("AA")
+			else:
+				stompJump()
+				return
+		else:
+			jump_buffer.start(.3)
+		
 			
-		if canWJ or wall_jump_buffer.time_left > 0:
-			var dir = wall_jump_ray.get_collision_normal()
-			velocity = dir * 5
-			velocity.y = 10
+			
+	if canWJ or wall_jump_buffer.time_left > 0:
+		var dir = wall_jump_ray.get_collision_normal()
+		velocity = dir * 10
+		velocity.y = 10
+		mesh.scale = Vector3(.7,1.3,.7)
+		
 	
-	jump_buffer.start(.3)
+	#jump_buffer.start(.3)
 	
 	$Timers/JumpCooldown.start(.01)
 	
@@ -153,22 +190,30 @@ func stomp() -> void:
 	if stomp_ray.is_colliding() or is_on_floor():
 		state = States.IDLE
 		moveControl = 8
+		mesh.scale = Vector3(1.4,.5,1.4)
+		stompJumpTimer.start(.5)
+		print("Start!!!")
+		targetScale = Vector3(1,1,1)
 	else: #keep goin
 		velocity.y = -30
 		moveControl = 1
+		print("A")
+		
 
 
 func manageTripleJump() -> void:
 	var newVel = direction * velocity.length()
 	if triple_jump_grace.time_left == 0 or jumpNum == 0 or jumpNum > 2:
 		newVel.y = JUMP_VELOCITY
-		
+		mesh.scale = Vector3(.8,1.2,.8)
 		jumpNum = 0
 	else:
 		if jumpNum == 1:
-			newVel.y = JUMP_VELOCITY * 1.2
+			newVel.y = JUMP_VELOCITY * 1.4
+			mesh.scale = Vector3(.75,1.3,.75)
 		elif jumpNum == 2:
-			newVel.y = JUMP_VELOCITY * 2	
+			newVel.y = JUMP_VELOCITY * 1.8
+			mesh.scale = Vector3(.4,1.5,.4)
 		
 	jumpNum += 1
 	print(jumpNum)
@@ -177,3 +222,20 @@ func manageTripleJump() -> void:
 
 func _on_jump_cooldown_timeout() -> void:
 	canJump = true
+
+
+func stompJump() -> void:
+	var newVel = direction * velocity.length()
+	newVel.y = JUMP_VELOCITY * 1.8
+	velocity = newVel
+	mesh.scale = Vector3(.1,2.5,.1)
+	print("ya!")
+	$Timers/JumpCooldown.start(.01)
+	
+	
+
+func endGame() -> void:
+	$"../CanvasLayer/Label".visible = true
+	
+	animPlr.play("yippe")
+	$AnimationPlayer2.play("CHEEZ")

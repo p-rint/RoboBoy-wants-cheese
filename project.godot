@@ -15,6 +15,11 @@ run/main_scene="uid://c73o3w8bj2y7r"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[display]
+
+window/size/mode=2
+window/stretch/mode="canvas_items"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/godot_super-wakatime/plugin.cfg")
@@ -61,7 +66,7 @@ Jump={
 
 [physics]
 
-3d/default_gravity=15.0
+3d/default_gravity=22.0
 
 [rendering]
 
